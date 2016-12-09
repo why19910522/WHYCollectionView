@@ -1,4 +1,7 @@
 # WHYCollectionView
+[![Language](https://img.shields.io/badge/language-Swift%203.0-orange.svg)](https://swift.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cyanzhong/xTextHandler/blob/master/LICENSE)
+
 为 UICollectionView 添加 Header/FooterView 和 SectionView
 
 ## 使用方法
