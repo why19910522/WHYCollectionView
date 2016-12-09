@@ -15,19 +15,17 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        automaticallyAdjustsScrollViewInsets = false
-        
         let flowLayout                     = UICollectionViewFlowLayout()
         flowLayout.itemSize                = CGSize(width: 100, height: 100)
         flowLayout.minimumInteritemSpacing = 10
         flowLayout.minimumLineSpacing      = 10
-//        flowLayout.scrollDirection         = .horizontal
+        flowLayout.scrollDirection         = .horizontal
         
-        let collectionView = WHYCollectionView(with: view.bounds, flowLayout: flowLayout)
+        let collectionView = WHYCollectionView(with: view.bounds, layout: flowLayout)
         collectionView.backgroundColor = .white
         collectionView.collectionDataSource = self
         collectionView.collectionInset = UIEdgeInsetsMake(10, 10, 10, 10)
-//        collectionView.scrollDirection = .horizontal
+        collectionView.scrollDirection = .horizontal
         
         view.addSubview(collectionView)
         
@@ -41,16 +39,7 @@ class ViewController: UIViewController {
         
         collectionView.collectionHeaderView = headerView
         collectionView.collectionFooterView = footerView
-        
-        
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-
-
 }
 
 extension ViewController: UICollectionViewDataSource {
@@ -70,7 +59,6 @@ extension ViewController: UICollectionViewDataSource {
         
         return cell;
     }
-    
 }
 
 

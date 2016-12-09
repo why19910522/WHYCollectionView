@@ -56,23 +56,6 @@ class WHYCollectionView: UIScrollView {
         }
     }
     
-    /// 设置滚动方向时, 需要同时设置flowLayout里的滚动方向, 否则会显示错误
-    open var scrollDirection: WHYCollectionViewScrollDirection
-    
-    open var flowLayout: UICollectionViewLayout {
-        didSet {
-            collectionView.collectionViewLayout = flowLayout
-        }
-    }
-    
-    open var collectionView: UICollectionView
-    
-    open override var backgroundColor: UIColor? {
-        didSet {
-            collectionView.backgroundColor = backgroundColor
-        }
-    }
-    
     open var collectionInset: UIEdgeInsets? {
         didSet {
             if let inset = collectionInset {
@@ -82,19 +65,35 @@ class WHYCollectionView: UIScrollView {
         }
     }
     
+    open override var backgroundColor: UIColor? {
+        didSet {
+            collectionView.backgroundColor = backgroundColor
+        }
+    }
+    
+    /// 设置滚动方向时, 需要同时设置flowLayout里的滚动方向, 否则会显示错误
+    open var scrollDirection: WHYCollectionViewScrollDirection
+    
+    open var collectionViewLayout: UICollectionViewLayout {
+        didSet {
+            collectionView.collectionViewLayout = collectionViewLayout
+        }
+    }
+    
+    open var collectionView: UICollectionView
+    
     // MARK: init func
     init(with frame: CGRect = .zero,
-         flowLayout: UICollectionViewLayout = UICollectionViewFlowLayout(),
+             layout: UICollectionViewLayout = UICollectionViewFlowLayout(),
           direction: WHYCollectionViewScrollDirection = .vertical) {
         
-        scrollDirection = direction
-        collectionView  = UICollectionView(frame: CGRect(origin: .zero, size: frame.size), collectionViewLayout: flowLayout)
-        self.flowLayout = flowLayout
+        collectionView       = UICollectionView(frame: CGRect(origin: .zero, size: frame.size), collectionViewLayout: layout)
+        collectionViewLayout = layout
+        scrollDirection      = direction
         
         super.init(frame: frame)
         
         setupCollectionView()
-        
     }
     
     convenience init() {
