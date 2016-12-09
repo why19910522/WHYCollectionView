@@ -8,104 +8,185 @@
 
 import UIKit
 
-// MARK: WHYCollectionDataSource
-protocol WHYCollectionViewDataSource : NSObjectProtocol {
+enum WHYCollectionViewScrollDirection: Int {
+    case vertical
+    case horizontal
     
-    func numberOfSections(in collectionView: WHYCollectionView) -> Int
-    
-    func collectionView(_ collectionView: WHYCollectionView, numberOfItemsInSection section: Int) -> Int
-    
-    func collectionView(_ collectionView: WHYCollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
-    
+    init() {
+        self = .vertical
+    }
 }
-
-// MARK: WHYCollectionDelegate
-protocol WHYCollectionViewDelegate : NSObjectProtocol {
-    
-}
-
 
 class WHYCollectionView: UIScrollView {
 
     // MARK: open var
-    open weak var collectionDataSource: WHYCollectionViewDataSource?
-    
-    open weak var collectionDelegate: WHYCollectionViewDelegate?
-    
-    open var collectionHeaderView: UIView?
-    
-    open var collectionFooterView: UIView?
-    
-    open var flowLayout: UICollectionViewFlowLayout
-    
-    // MARK: private var
-    private var collectionView: UICollectionView
-    
-    // MARK: init func
-    init(withFlowLayout flowLayout: UICollectionViewFlowLayout, frame: CGRect) {
-        
-        self.flowLayout = flowLayout
-        collectionView = UICollectionView(frame: frame, collectionViewLayout: flowLayout)
-        
-        super.init(frame: frame)
+    open weak var collectionDelegate: UICollectionViewDelegate? {
+        didSet {
+            collectionView.delegate = collectionDelegate
+        }
     }
     
-    required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    open weak var collectionDataSource: UICollectionViewDataSource? {
+        didSet {
+            collectionView.dataSource = collectionDataSource
+        }
+    }
+    
+    open var collectionHeaderView: UIView? {
+        didSet {
+            oldValue?.removeFromSuperview()
+            
+            if let headerView = collectionHeaderView {
+                addSubview(headerView)
+            }
+            
+            updateCollectionFrame()
+        }
+    }
+    
+    open var collectionFooterView: UIView? {
+        didSet {
+            oldValue?.removeFromSuperview()
+            
+            if let footerView = collectionFooterView {
+                addSubview(footerView)
+            }
+            
+            updateCollectionFrame()
+        }
+    }
+    
+    /// 设置滚动方向时, 需要同时设置flowLayout里的滚动方向, 否则会显示错误
+    open var scrollDirection: WHYCollectionViewScrollDirection
+    
+    open var flowLayout: UICollectionViewLayout {
+        didSet {
+            collectionView.collectionViewLayout = flowLayout
+        }
+    }
+    
+    open var collectionView: UICollectionView
+    
+    open override var backgroundColor: UIColor? {
+        didSet {
+            collectionView.backgroundColor = backgroundColor
+        }
+    }
+    
+    open var collectionInset: UIEdgeInsets? {
+        didSet {
+            if let inset = collectionInset {
+                collectionView.contentInset = inset;
+                updateCollectionFrame()
+            }
+        }
+    }
+    
+    // MARK: init func
+    init(with frame: CGRect = .zero,
+         flowLayout: UICollectionViewLayout = UICollectionViewFlowLayout(),
+          direction: WHYCollectionViewScrollDirection = .vertical) {
+        
+        scrollDirection = direction
+        collectionView  = UICollectionView(frame: CGRect(origin: .zero, size: frame.size), collectionViewLayout: flowLayout)
+        self.flowLayout = flowLayout
+        
+        super.init(frame: frame)
+        
+        setupCollectionView()
+        
+    }
+    
+    convenience init() {
+        self.init(with: .zero);
+    }
+    
+    required convenience init?(coder aDecoder: NSCoder) {
+        self.init()
     }
     
     // MARK: open func
     func reloadData() {
-        
+        updateCollectionFrame()
+        collectionView.reloadData()
+    }
+    
+    open func register(cellClass: Swift.AnyClass?, forCellWithReuseIdentifier identifier: String) {
+        collectionView.register(cellClass, forCellWithReuseIdentifier: identifier)
+    }
+    
+    open func register(cellNib: UINib?, forCellWithReuseIdentifier identifier: String) {
+        collectionView.register(cellNib, forCellWithReuseIdentifier: identifier)
+    }
+    
+    open func register(viewClass: Swift.AnyClass?, forSupplementaryViewOfKind elementKind: String, withReuseIdentifier identifier: String) {
+        collectionView.register(viewClass, forSupplementaryViewOfKind: elementKind, withReuseIdentifier: identifier)
     }
 
-}
-
-extension WHYCollectionView: UICollectionViewDataSource {
-    
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        
-        guard let dataSource = collectionDataSource else { return 0 }
-        
-        return dataSource.numberOfSections(in: self)
+    open func register(viewNib: UINib?, forSupplementaryViewOfKind kind: String, withReuseIdentifier identifier: String) {
+        collectionView.register(viewNib, forSupplementaryViewOfKind: kind, withReuseIdentifier: identifier)
     }
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    // MARK: private func
+    private func setupCollectionView() {
+        addSubview(collectionView)
+        collectionView.isScrollEnabled = false
+    }
+    
+    private func updateCollectionFrame() {
+        switch scrollDirection {
+        case .horizontal:
+            updateHorizontalFrame()
+        default:
+            updateVerticalFrame()
+        }
+    }
+    
+    private func updateHorizontalFrame() {
         
-        guard let dataSource = collectionDataSource else { return 0 }
+        var scrollWidth     = collectionView.frame.size.width
+        var collectionFrame = collectionView.frame
+        let inset           = collectionInset ?? UIEdgeInsetsMake(0, 0, 0, 0)
         
-        return dataSource.collectionView(self, numberOfItemsInSection: section)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        collectionFrame.size.width  = collectionView.collectionViewLayout.collectionViewContentSize.width
+        collectionFrame.size.width += (inset.left + inset.right)
         
-        guard let dataSource = collectionDataSource else { return UICollectionViewCell.init() }
+        if let headerView = collectionHeaderView {
+            scrollWidth             += headerView.frame.size.width
+            headerView.frame         = CGRect(x: 0, y: 0, width: headerView.bounds.size.width, height: bounds.size.height)
+            collectionFrame.origin.x = headerView.frame.size.width
+        }
         
-        return dataSource.collectionView(self, cellForItemAt: indexPath)
+        if let footerView = collectionFooterView {
+            scrollWidth     += footerView.frame.size.width
+            footerView.frame = CGRect(x: collectionFrame.maxX, y: 0, width: footerView.bounds.size.width, height: bounds.size.height)
+        }
+        
+        collectionView.frame = collectionFrame
+        contentSize          = CGSize(width: scrollWidth, height: 0)
     }
     
-}
-
-extension WHYCollectionView: UICollectionViewDelegate {
-    
-}
-
-extension WHYCollectionViewDataSource {
-    
-    func numberOfSections(in collectionView: WHYCollectionView) -> Int {
-        return 1
+    private func updateVerticalFrame() {
+        
+        var scrollHeight    = collectionView.frame.size.height
+        var collectionFrame = collectionView.frame
+        let inset           = collectionInset ?? UIEdgeInsetsMake(0, 0, 0, 0)
+        
+        collectionFrame.size.height  = collectionView.collectionViewLayout.collectionViewContentSize.height
+        collectionFrame.size.height += (inset.bottom + inset.top)
+        
+        if let headerView = collectionHeaderView {
+            scrollHeight            += headerView.frame.size.height
+            headerView.frame         = CGRect(x: 0, y: 0, width: bounds.size.width, height: headerView.bounds.size.height)
+            collectionFrame.origin.y = headerView.frame.size.height
+        }
+        
+        if let footerView = collectionFooterView {
+            scrollHeight    += footerView.frame.size.height
+            footerView.frame = CGRect(x: 0, y: collectionFrame.maxY, width: bounds.size.width, height: footerView.bounds.size.height)
+        }
+        
+        collectionView.frame = collectionFrame
+        contentSize          = CGSize(width: 0, height: scrollHeight)
     }
-    
-    func collectionView(_ collectionView: WHYCollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 0;
-    }
-    
-    func collectionView(_ collectionView: WHYCollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        return UICollectionViewCell.init()
-    }
-    
-}
-
-extension WHYCollectionViewDelegate {
-    
 }
